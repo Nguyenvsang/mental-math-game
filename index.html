@@ -11,6 +11,7 @@
         body {
             font-family: 'Lexend', sans-serif;
             touch-action: manipulation;
+            transition: background-color 0.3s ease;
         }
 
         .math-card {
@@ -18,6 +19,7 @@
             backdrop-filter: blur(10px);
             border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .number-btn {
@@ -32,7 +34,7 @@
         }
 
         .progress-bar {
-            transition: width 0.1s linear;
+            transition: width 0.1s linear, background-color 0.3s ease;
         }
 
         @keyframes shake {
@@ -44,6 +46,23 @@
         .shake {
             animation: shake 0.2s ease-in-out 0s 2;
         }
+
+        .combo-pulse {
+            animation: pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .correct-flash {
+            background-color: #dcfce7 !important;
+        }
+
+        .wrong-flash {
+            background-color: #fee2e2 !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 overflow-hidden">
@@ -51,16 +70,20 @@
     <!-- Start Screen -->
     <div id="start-screen" class="max-w-md w-full text-center p-8 math-card">
         <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">Mental Math</h1>
-        <p class="text-slate-500 mb-8">Rèn luyện trí não, phản xạ siêu tốc!</p>
+        <p class="text-slate-500 mb-6">Rèn luyện trí não, phản xạ siêu tốc!</p>
+        
+        <div id="best-score-display" class="mb-8 text-sm font-semibold text-slate-400 uppercase tracking-widest">
+            Kỷ lục của bạn: <span id="high-score" class="text-indigo-500">0</span>
+        </div>
         
         <div class="space-y-4">
-            <button onclick="startGame('easy')" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105">
+            <button onclick="startGame('easy')" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95">
                 DỄ (Cộng/Trừ 1-20)
             </button>
-            <button onclick="startGame('medium')" class="w-full py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105">
+            <button onclick="startGame('medium')" class="w-full py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95">
                 TRUNG BÌNH (Cộng/Trừ/Nhân 1-50)
             </button>
-            <button onclick="startGame('hard')" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105">
+            <button onclick="startGame('hard')" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95">
                 KHÓ (Hỗn hợp 1-100)
             </button>
         </div>
@@ -68,10 +91,19 @@
 
     <!-- Game Screen -->
     <div id="game-screen" class="max-w-md w-full hidden">
-        <div class="math-card p-6 mb-4">
+        <div id="main-card" class="math-card p-6 mb-4">
             <div class="flex justify-between items-center mb-6">
-                <div class="text-indigo-600 font-bold">Điểm: <span id="score">0</span></div>
-                <div class="text-red-500 font-bold">Thời gian: <span id="timer">10</span>s</div>
+                <div class="flex flex-col">
+                    <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Điểm số</span>
+                    <div class="text-indigo-600 text-2xl font-black"><span id="score">0</span></div>
+                </div>
+                <div id="combo-container" class="hidden text-orange-500 font-black text-xl italic animate-bounce">
+                    x<span id="combo">0</span> COMBO!
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Thời gian</span>
+                    <div class="text-red-500 text-2xl font-black"><span id="timer">10</span>s</div>
+                </div>
             </div>
             
             <div class="h-2 w-full bg-slate-100 rounded-full mb-8 overflow-hidden">
@@ -79,29 +111,29 @@
             </div>
 
             <div id="question-container" class="text-center py-8">
-                <div id="equation" class="text-5xl font-black text-slate-800 tracking-tighter transition-all">
-                    12 + 5
+                <div id="equation" class="text-5xl font-black text-slate-800 tracking-tighter transition-all duration-200">
+                    --
                 </div>
             </div>
         </div>
 
         <!-- Input Area -->
         <div class="grid grid-cols-3 gap-3">
-            <button onclick="appendNum(1)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">1</button>
-            <button onclick="appendNum(2)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">2</button>
-            <button onclick="appendNum(3)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">3</button>
-            <button onclick="appendNum(4)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">4</button>
-            <button onclick="appendNum(5)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">5</button>
-            <button onclick="appendNum(6)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">6</button>
-            <button onclick="appendNum(7)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">7</button>
-            <button onclick="appendNum(8)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">8</button>
-            <button onclick="appendNum(9)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">9</button>
-            <button onclick="clearNum()" class="number-btn bg-slate-200 p-6 rounded-2xl text-xl font-bold shadow-sm text-slate-600">C</button>
-            <button onclick="appendNum(0)" class="number-btn bg-white p-6 rounded-2xl text-2xl font-bold shadow-sm text-slate-700">0</button>
-            <button onclick="checkAnswer()" class="number-btn bg-indigo-600 p-6 rounded-2xl text-white text-xl font-bold shadow-lg">OK</button>
+            <button onclick="appendNum(1)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">1</button>
+            <button onclick="appendNum(2)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">2</button>
+            <button onclick="appendNum(3)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">3</button>
+            <button onclick="appendNum(4)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">4</button>
+            <button onclick="appendNum(5)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">5</button>
+            <button onclick="appendNum(6)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">6</button>
+            <button onclick="appendNum(7)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">7</button>
+            <button onclick="appendNum(8)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">8</button>
+            <button onclick="appendNum(9)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">9</button>
+            <button onclick="clearNum()" class="number-btn bg-slate-200 p-5 rounded-2xl text-xl font-bold shadow-sm text-slate-600 hover:bg-slate-300">C</button>
+            <button onclick="appendNum(0)" class="number-btn bg-white p-5 rounded-2xl text-2xl font-bold shadow-sm text-slate-700 hover:bg-slate-50">0</button>
+            <button onclick="checkAnswer()" class="number-btn bg-indigo-600 p-5 rounded-2xl text-white text-xl font-bold shadow-lg hover:bg-indigo-700">OK</button>
         </div>
         
-        <div id="user-input" class="mt-4 text-center text-3xl font-bold text-indigo-600 min-h-[40px]">
+        <div id="user-input" class="mt-4 text-center text-4xl font-black text-indigo-600 min-h-[48px] tracking-widest">
             <!-- User input displays here -->
         </div>
     </div>
@@ -111,15 +143,40 @@
         <h2 class="text-3xl font-bold text-slate-800 mb-2">Kết Thúc!</h2>
         <p class="text-slate-500 mb-6" id="result-message">Bạn đã rất cố gắng!</p>
         
-        <div class="text-6xl font-black text-indigo-600 mb-8" id="final-score">0</div>
+        <div class="flex justify-center gap-8 mb-8">
+            <div>
+                <span class="text-xs text-slate-400 font-bold uppercase">Điểm đạt được</span>
+                <div class="text-5xl font-black text-indigo-600" id="final-score">0</div>
+            </div>
+            <div id="new-record-tag" class="hidden">
+                <span class="text-xs text-orange-500 font-bold uppercase">Kỷ lục mới!</span>
+                <div class="text-5xl font-black text-orange-500">🏆</div>
+            </div>
+        </div>
         
-        <button onclick="location.reload()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg">
+        <button onclick="location.reload()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95">
             CHƠI LẠI
         </button>
     </div>
 
     <script>
+        // Audio Synthesis (No external files needed)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
         let score = 0;
+        let combo = 0;
         let timeLeft = 10;
         let currentAnswer = 0;
         let userInput = "";
@@ -133,9 +190,14 @@
             result: document.getElementById('result-screen')
         };
 
+        // Initialize High Score
+        const savedHighScore = localStorage.getItem('mentalMathHighScore') || 0;
+        document.getElementById('high-score').innerText = savedHighScore;
+
         function startGame(level) {
             difficulty = level;
             score = 0;
+            combo = 0;
             maxTime = level === 'easy' ? 10 : (level === 'medium' ? 8 : 5);
             
             screens.start.classList.add('hidden');
@@ -143,6 +205,7 @@
             
             nextQuestion();
             startTimer();
+            playTone(440, 'sine', 0.2);
         }
 
         function nextQuestion() {
@@ -168,7 +231,12 @@
 
             if (operator === '-' && num1 < num2) [num1, num2] = [num2, num1];
 
-            document.getElementById('equation').innerText = `${num1} ${operator === '*' ? '×' : operator} ${num2}`;
+            const eqEl = document.getElementById('equation');
+            eqEl.style.opacity = 0;
+            setTimeout(() => {
+                eqEl.innerText = `${num1} ${operator === '*' ? '×' : operator} ${num2}`;
+                eqEl.style.opacity = 1;
+            }, 100);
             
             if (operator === '+') currentAnswer = num1 + num2;
             if (operator === '-') currentAnswer = num1 - num2;
@@ -182,6 +250,7 @@
             if (userInput.length < 5) {
                 userInput += num;
                 updateInputDisplay();
+                playTone(600 + (userInput.length * 100), 'sine', 0.05);
             }
         }
 
@@ -191,21 +260,39 @@
         }
 
         function updateInputDisplay() {
-            document.getElementById('user-input').innerText = userInput;
+            document.getElementById('user-input').innerText = userInput || "_";
         }
 
         function checkAnswer() {
+            const mainCard = document.getElementById('main-card');
             if (parseInt(userInput) === currentAnswer) {
-                score++;
+                // Correct
+                combo++;
+                let pointsToAdd = 1 + Math.floor(combo / 5);
+                score += pointsToAdd;
+                
                 document.getElementById('score').innerText = score;
-                const eq = document.getElementById('equation');
-                eq.classList.add('text-green-500');
-                setTimeout(() => eq.classList.remove('text-green-500'), 200);
+                
+                if (combo >= 3) {
+                    const comboCont = document.getElementById('combo-container');
+                    comboCont.classList.remove('hidden');
+                    document.getElementById('combo').innerText = combo;
+                }
+
+                playTone(880, 'sine', 0.1);
+                mainCard.classList.add('correct-flash');
+                setTimeout(() => mainCard.classList.remove('correct-flash'), 200);
+                
                 nextQuestion();
             } else {
-                const gameCard = document.querySelector('.math-card');
-                gameCard.classList.add('shake');
-                setTimeout(() => gameCard.classList.remove('shake'), 200);
+                // Wrong
+                combo = 0;
+                document.getElementById('combo-container').classList.add('hidden');
+                
+                playTone(220, 'sawtooth', 0.2);
+                mainCard.classList.add('shake', 'wrong-flash');
+                setTimeout(() => mainCard.classList.remove('shake', 'wrong-flash'), 200);
+                
                 userInput = "";
                 updateInputDisplay();
             }
@@ -230,6 +317,9 @@
             
             if (percent < 30) {
                 bar.className = 'progress-bar h-full bg-red-500';
+                if (Math.ceil(timeLeft) <= 3 && Math.floor(timeLeft * 10) % 10 === 0) {
+                    playTone(330, 'square', 0.05);
+                }
             } else {
                 bar.className = 'progress-bar h-full bg-indigo-500';
             }
@@ -241,16 +331,26 @@
             screens.result.classList.remove('hidden');
             document.getElementById('final-score').innerText = score;
             
+            // Handle High Score
+            const currentHigh = parseInt(localStorage.getItem('mentalMathHighScore') || 0);
+            if (score > currentHigh) {
+                localStorage.setItem('mentalMathHighScore', score);
+                document.getElementById('new-record-tag').classList.remove('hidden');
+            }
+
             const msg = document.getElementById('result-message');
-            if (score > 20) msg.innerText = "Tuyệt vời! Bạn là thiên tài toán học!";
-            else if (score > 10) msg.innerText = "Rất tốt! Kỹ năng của bạn đang thăng tiến.";
-            else msg.innerText = "Cố gắng lên! Luyện tập nhiều hơn nhé.";
+            if (score > 30) msg.innerText = "Tuyệt đỉnh! Bạn là máy tính sống!";
+            else if (score > 15) msg.innerText = "Rất tốt! Cố gắng phá kỷ lục nhé.";
+            else msg.innerText = "Không sao, luyện tập thêm chút nữa nhé!";
+            
+            playTone(440, 'sine', 0.1);
+            setTimeout(() => playTone(330, 'sine', 0.3), 100);
         }
 
         document.addEventListener('keydown', (e) => {
             if (screens.game.classList.contains('hidden')) return;
             if (e.key >= '0' && e.key <= '9') appendNum(e.key);
-            if (e.key === 'Backspace' || e.key === 'c') clearNum();
+            if (e.key === 'Backspace') clearNum();
             if (e.key === 'Enter') checkAnswer();
         });
     </script>
